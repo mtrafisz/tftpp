@@ -39,10 +39,4 @@ target_link_libraries (${PROJECT_NAME} PRIVATE glfw opengl32 tftpc nfd)
 # add platform specific libraries:
 if (WIN32)
     target_link_libraries (${PROJECT_NAME} PRIVATE ws2_32)
-elseif (UNIX)
-    # GTK:
-    find_package (PkgConfig REQUIRED)
-    pkg_check_modules (GTK3 REQUIRED gtk+-3.0)
-    target_include_directories (${PROJECT_NAME} PRIVATE ${GTK3_INCLUDE_DIRS})
-    target_link_libraries (${PROJECT_NAME} PRIVATE ${GTK3_LIBRARIES})
-endif ()
+endif()

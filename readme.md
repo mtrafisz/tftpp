@@ -10,6 +10,12 @@ cd build
 cmake .. -G "YourFavouriteGenerator"
 ```
 
+Due to Native File Dialog use of gtk, on Linux you also have to install those packages:
+```bash
+pkg-config gtk-3-dev libsystemd-dev libwebp-dev libzstd-dev
+```
+Exact list will vary depending on your distro
+
 ## Licensing
 
 TFTPp itself it distributed under MIT license.
