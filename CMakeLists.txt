@@ -4,8 +4,10 @@ cmake_minimum_required (VERSION 3.5)
 execute_process (COMMAND git submodule update --init --recursive --depth 1
                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
-project (imgui_glfw_opengl3_template)
-add_subdirectory (third-party/glfw) # build glfw as a static library
+project (tftpp)
+add_subdirectory (third-party/glfw)
+add_subdirectory (third-party/tftp.cpp)
+add_subdirectory (third-party/nfd) 
 
 # set imgui backend to use glfw and opengl3
 set (IMGUI_BACKENDS
@@ -21,6 +23,8 @@ target_include_directories (${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party/imgui
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party/imgui/backends
     ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glfw/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/third-party/tftp.cpp/inc
+    ${CMAKE_CURRENT_SOURCE_DIR}/third-party/nfd/src/include
 )
 
 # add imgui source files
@@ -28,4 +32,8 @@ file (GLOB IMGUI_SOURCES third-party/imgui/*.cpp)
 target_sources (${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES} ${IMGUI_BACKENDS})
 
 # link glfw and opengl32
-target_link_libraries (${PROJECT_NAME} PRIVATE glfw opengl32)
+target_link_libraries (${PROJECT_NAME} PRIVATE glfw opengl32 tftpc nfd)
+
+if (WIN32)
+    target_link_libraries (${PROJECT_NAME} PRIVATE ws2_32)
+endif()
