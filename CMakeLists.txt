@@ -5,6 +5,7 @@ execute_process (COMMAND git submodule update --init --recursive --depth 1
                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 project (tftpp)
+set (CXX_STANDARD_REQUIRED C17)
 
 # compile submodules
 add_subdirectory (third-party/glfw)
@@ -34,9 +35,12 @@ file (GLOB IMGUI_SOURCES third-party/imgui/*.cpp)
 target_sources (${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES} ${IMGUI_BACKENDS})
 
 # link with submodules
-target_link_libraries (${PROJECT_NAME} PRIVATE glfw opengl32 tftpc nfd)
+target_link_libraries (${PROJECT_NAME} PRIVATE glfw tftpc nfd)
 
 # add platform specific libraries:
 if (WIN32)
-    target_link_libraries (${PROJECT_NAME} PRIVATE ws2_32)
+    target_link_libraries (${PROJECT_NAME} PRIVATE ws2_32 opengl32)
+elseif (UNIX)
+    # todo: is this required for all distros? It works on wayland ...
+    target_link_libraries (${PROJECT_NAME} PRIVATE GL X11 pthread dl)
 endif()

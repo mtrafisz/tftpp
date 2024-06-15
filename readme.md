@@ -12,9 +12,9 @@ cmake .. -G "YourFavouriteGenerator"
 
 Due to Native File Dialog use of gtk, on Linux you also have to install those packages:
 ```bash
-pkg-config gtk-3-dev libsystemd-dev libwebp-dev libzstd-dev
+sudo apt install pkg-config libgtk-3-dev libsystemd-dev libwebp-dev libzstd-dev
 ```
-Exact list will vary depending on your distro
+Exact list will vary depending on your distro (ex. window-manager-specific libraries, etc.)
 
 ## Licensing
 

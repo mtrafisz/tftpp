@@ -3,12 +3,14 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 #include "nfd.hpp"
-#include <iostream>
 #define GL_SILENCE_DEPRECATION
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
 #endif
 #include <GLFW/glfw3.h>
+
+#include <iostream>
+#include <cstring>
 
 static void glfw_error_callback(int error, const char* description)
 {
@@ -178,7 +180,7 @@ int main(void)
 
                         if (result == NFD_OKAY)
                         {
-                            strncpy_s(local_filepath, outPath, 255);
+                            strncpy(local_filepath, outPath, 255);
                             NFD_FreePath(outPath);
                         }
                         else if (result == NFD_CANCEL)
