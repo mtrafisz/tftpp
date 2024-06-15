@@ -1,10 +1,12 @@
 cmake_minimum_required (VERSION 3.5)
 
-# make sure the submodules (imgui and glfw) are initialized:
+# make sure the submodules are initialized:
 execute_process (COMMAND git submodule update --init --recursive --depth 1
                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 project (tftpp)
+
+# compile submodules
 add_subdirectory (third-party/glfw)
 add_subdirectory (third-party/tftp.cpp)
 add_subdirectory (third-party/nfd) 
@@ -31,9 +33,16 @@ target_include_directories (${PROJECT_NAME} PRIVATE
 file (GLOB IMGUI_SOURCES third-party/imgui/*.cpp)
 target_sources (${PROJECT_NAME} PRIVATE ${IMGUI_SOURCES} ${IMGUI_BACKENDS})
 
-# link glfw and opengl32
+# link with submodules
 target_link_libraries (${PROJECT_NAME} PRIVATE glfw opengl32 tftpc nfd)
 
+# add platform specific libraries:
 if (WIN32)
     target_link_libraries (${PROJECT_NAME} PRIVATE ws2_32)
-endif()
+elseif (UNIX)
+    # GTK:
+    find_package (PkgConfig REQUIRED)
+    pkg_check_modules (GTK3 REQUIRED gtk+-3.0)
+    target_include_directories (${PROJECT_NAME} PRIVATE ${GTK3_INCLUDE_DIRS})
+    target_link_libraries (${PROJECT_NAME} PRIVATE ${GTK3_LIBRARIES})
+endif ()

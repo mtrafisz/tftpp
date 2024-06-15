@@ -2,3 +2,8 @@
 build
 # vscode:
 .vscode
+# vs2022:
+.vs
+out
+# editorconfig:
+.editorconfig

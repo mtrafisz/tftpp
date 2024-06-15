@@ -8,30 +8,24 @@
 #if defined(IMGUI_IMPL_OPENGL_ES2)
 #include <GLES2/gl2.h>
 #endif
-#include <GLFW/glfw3.h> // Will drag system OpenGL headers
+#include <GLFW/glfw3.h>
 
 static void glfw_error_callback(int error, const char* description)
 {
     std::cerr << "GLFW Error " << error << ": " << description << std::endl;
 }
 
-static void beep() {
-#ifdef _WIN32
-    MessageBeep(MB_ICONERROR);
-#else
-    std::cout << '\a' << std::flush;
-#endif
-}
-
-class Popup {
+class Popup
+{
 public:
     bool open;
     std::string title;
     std::string message;
 
     Popup() : open(false), title(""), message("") {}
-    
-    Popup ErrorPopup(const std::string& message) {
+
+    Popup ErrorPopup(const std::string& message)
+    {
         Popup p;
         p.open = true;
         p.title = "Error";
@@ -39,7 +33,8 @@ public:
         return p;
     }
 
-    Popup InfoPopup(const std::string& message) {
+    Popup InfoPopup(const std::string& message)
+    {
         Popup p;
         p.open = true;
         p.title = "Info";
@@ -48,9 +43,11 @@ public:
     }
 };
 
-// Main code
-int main(int, char**)
+int main(void)
 {
+    /* Initialization */
+
+	// Initialize Winsock
 #ifdef _WIN32
     WSAData wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
@@ -60,8 +57,10 @@ int main(int, char**)
     }
 #endif
 
+	// Initialize Native File Dialog
     NFD_Init();
 
+	// Initialize GLFW
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
         return 1;
@@ -69,49 +68,51 @@ int main(int, char**)
     const char* glsl_version = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);  // 3.2+ only
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // 3.0+ only
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);           
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-    GLFWwindow* window = glfwCreateWindow(400, 300, "TFTPp", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(390, 300, "TFTPp", nullptr, nullptr);
     if (window == nullptr)
         return 1;
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1); // Enable vsync
 
-    // Setup Dear ImGui context
+	// Initialize ImGui
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    // io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-    // Setup Dear ImGui style
-    //ImGui::StyleColorsDark();
-    ImGui::StyleColorsLight();
+    ImGui::StyleColorsDark();
+    // ImGui::StyleColorsLight();
 
-    // Setup Platform/Renderer backends
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     const ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoTitleBar;
 
-    // Our state
-    ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-    float progress = 0.0f;
+    /* State variables */
+    float progress = 0.0f;  // for progress bar
     Popup popup;
-    bool disable_input = false;
+    bool disable_input = false; // Disable input while transfer is in progress
 
-    tftp::Client::ProgressCallback progress_callback = [&progress, &popup](tftp::Client::Progress& p) {
-        progress = (float)p.transferred_bytes / (float)p.total_bytes;
-        if (p.transferred_bytes == p.total_bytes) {
-            progress = 0.0f;
-            std::string info_msg = "Transfer completed.\nTotal bytes transferred:\n" + std::to_string(p.transferred_bytes);
-            popup = popup.InfoPopup(info_msg);
-        }
-    };
-    
-    // Main loop
+    std::vector<std::string> log;
+
+    /* Progress callback for TFTP client */
+    tftp::Client::ProgressCallback progress_callback = [&progress, &popup](tftp::Client::Progress& p)
+        {
+            progress = (float)p.transferred_bytes / (float)p.total_bytes;
+            if (p.transferred_bytes == p.total_bytes)
+            {
+                progress = 0.0f;
+                std::string info_msg = "Transfer completed.\nTotal bytes transferred:\n" + std::to_string(p.transferred_bytes);
+                popup = popup.InfoPopup(info_msg);
+            }
+        };
+
+    /* Main loop */
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
@@ -122,142 +123,201 @@ int main(int, char**)
         ImGui::NewFrame();
 
         {
+			// Input fields vars
             static char address[255] = "127.0.0.1";
             static uint16_t port = 69;
             static char local_filepath[255] = "C:\\Users\\mtrafisz\\Desktop\\test.iso";
             static char remote_filepath[255] = "debian.iso";
 
-
+			// Main window
             ImGui::SetNextWindowPos(ImVec2(0, 0));
             ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y));
 
             ImGui::Begin("TFTPp", nullptr, window_flags);
-            
-            ImGui::Dummy(ImVec2(0, 0));
 
-            ImGui::PushItemWidth(200.0f);
-            ImGui::InputText("##address", address, 255);
-            ImGui::PopItemWidth(); ImGui::SameLine();
+            ImGui::SetCursorPos(ImVec2(10, 10));
 
-            ImGui::Text("address"); ImGui::SameLine();
-            ImGui::Dummy(ImVec2(10, 0)); ImGui::SameLine();
+            if (ImGui::BeginTabBar("##tabs", ImGuiTabBarFlags_None))
+            {
+                if (ImGui::BeginTabItem("Client"))
+                {
 
-            ImGui::PushItemWidth(50.0f);
-            ImGui::InputScalar("##port", ImGuiDataType_U16, &port);
-            ImGui::PopItemWidth(); ImGui::SameLine();
+                    ImGui::PushItemWidth(200.0f);
+                    ImGui::InputText("##address", address, 255);
+                    ImGui::PopItemWidth();
+                    ImGui::SameLine();
 
-            ImGui::Text("port"); ImGui::Dummy(ImVec2(0, 0));
+                    ImGui::Text("address");
+                    ImGui::SameLine();
+                    ImGui::Dummy(ImVec2(10, 0));
+                    ImGui::SameLine();
 
-            ImGui::PushItemWidth(200.0f);
-            ImGui::InputText("##local_filepath", local_filepath, 255);
-            ImGui::PopItemWidth(); ImGui::SameLine();
+                    ImGui::PushItemWidth(50.0f);
+                    ImGui::InputScalar("##port", ImGuiDataType_U16, &port);
+                    ImGui::PopItemWidth();
+                    ImGui::SameLine();
 
-            ImGui::Text("local file"); ImGui::SameLine();
-            ImGui::Dummy(ImVec2(5, 0)); ImGui::SameLine();
+                    ImGui::Text("port");
+                    ImGui::Dummy(ImVec2(0, 0));
 
-            ImGui::PushItemWidth(40.0f);
-            if (ImGui::Button("Browse...")) {
-                nfdchar_t* outPath = nullptr;
-                nfdresult_t result = NFD_OpenDialog(&outPath, NULL, 0, NULL);
+                    ImGui::PushItemWidth(200.0f);
+                    ImGui::InputText("##local_filepath", local_filepath, 255);
+                    ImGui::PopItemWidth();
+                    ImGui::SameLine();
 
-                if (result == NFD_OKAY) {
-                    strncpy_s(local_filepath, outPath, 255);
-                    NFD_FreePath(outPath);
-                } else if (result == NFD_CANCEL) {}
-                else {
-                    popup = popup.ErrorPopup("Error opening file dialog.");
-                }
-            }
-            ImGui::PopItemWidth();
-            ImGui::Dummy(ImVec2(0, 0));
+                    ImGui::Text("local file");
+                    ImGui::SameLine();
+                    ImGui::Dummy(ImVec2(5, 0));
+                    ImGui::SameLine();
 
-            ImGui::PushItemWidth(200.0f);
-            ImGui::InputText("##remote_filepath", remote_filepath, 255);
-            ImGui::PopItemWidth(); ImGui::SameLine(); 
+                    ImGui::PushItemWidth(40.0f);
+                    if (ImGui::Button("Browse..."))
+                    {
+                        nfdchar_t* outPath = nullptr;
+                        nfdresult_t result = NFD_OpenDialog(&outPath, NULL, 0, NULL);
 
-            ImGui::Text("remote file");
+                        if (result == NFD_OKAY)
+                        {
+                            strncpy_s(local_filepath, outPath, 255);
+                            NFD_FreePath(outPath);
+                        }
+                        else if (result == NFD_CANCEL)
+                        {
+                        }
+                        else
+                        {
+                            popup = popup.ErrorPopup("Error opening file dialog.");
+                        }
+                    }
+                    ImGui::PopItemWidth();
+                    ImGui::Dummy(ImVec2(0, 0));
 
-            ImGui::Dummy(ImVec2(0, 10));
+                    ImGui::PushItemWidth(200.0f);
+                    ImGui::InputText("##remote_filepath", remote_filepath, 255);
+                    ImGui::PopItemWidth();
+                    ImGui::SameLine();
 
-            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 5));
-            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10, 5));
-            auto window_width = ImGui::GetContentRegionMax().x;
-            auto spacing = 100.0f;
-            auto total_width = 70.0f * 2 + spacing;
-            auto start_x = (window_width - total_width) / 2;
+                    ImGui::Text("remote file");
 
-            ImGui::SetCursorPosX(start_x);
+                    ImGui::Dummy(ImVec2(0, 10));
 
-            if (ImGui::Button("GET", ImVec2(70, 35))) {
-                if (disable_input) {
-                    beep();
-                } else {
-                    std::thread tftp_action([progress_callback, &popup, &disable_input]() {
-                        disable_input = true;
+                    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 5));
+                    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(10, 5));
+                    auto window_width = ImGui::GetContentRegionMax().x;
+                    auto spacing = 100.0f;
+                    auto total_width = 70.0f * 2 + spacing;
+                    auto start_x = (window_width - total_width) / 2;
 
-                        std::ofstream file(local_filepath, std::ios::binary);
-                        std::string address_str = address + std::string(":") + std::to_string(port);
-                        std::string remote_filepath_str = remote_filepath;
+                    ImGui::SetCursorPosX(start_x);
 
-                        try {
-                            tftp::Client::recv(address_str, remote_filepath, file, progress_callback, std::chrono::milliseconds(100));
-                        } catch (const tftp::TftpError& e) {
-                            popup = popup.ErrorPopup(e.what());
-                        } catch (const std::exception& e) {
-                            popup = popup.ErrorPopup(e.what());
+                    if (ImGui::Button("GET", ImVec2(70, 35)))
+                    {
+                        if (disable_input)
+                        {
+							goto skip_thread_creation;
                         }
 
-                        file.close();
-                        disable_input = false;
-                    });
+                        std::thread tftp_action([progress_callback, &popup, &disable_input, &log]()
+                            {
+                                disable_input = true;
 
-                    tftp_action.detach();
-                }
-            }
-            
-            ImGui::SameLine(); ImGui::SetCursorPosX(start_x + 70 + spacing);
+                                std::ofstream file(local_filepath, std::ios::binary);
+                                std::string address_str = address + std::string(":") + std::to_string(port);
+                                std::string remote_filepath_str = remote_filepath;
 
-            if (ImGui::Button("PUT", ImVec2(70, 35)) && !disable_input) {
-                if (disable_input) {
-                    beep();
-                } else {
-                    std::thread tftp_action([progress_callback, &popup, &disable_input]() {
-                        disable_input = true;
+                                try {
+                                    std::streamsize sz = tftp::Client::recv(address_str, remote_filepath, file, progress_callback, std::chrono::milliseconds(100));
+                                    log.push_back("Successfully downloaded " + remote_filepath_str + " - " + std::to_string(sz) + " bytes");
+                                }
+                                catch (const tftp::TftpError& e) {
+                                    popup = popup.ErrorPopup(e.what());
+                                }
+                                catch (const std::exception& e) {
+                                    popup = popup.ErrorPopup(e.what());
+                                }
 
-                        std::ifstream file(local_filepath, std::ios::binary);
-                        std::string address_str = address + std::string(":") + std::to_string(port);
-                        std::string remote_filepath_str = remote_filepath;
+                                file.close();
+                                disable_input = false; });
 
-                        try {
-                            tftp::Client::send(address_str, remote_filepath, file, progress_callback, std::chrono::milliseconds(100));
-                        } catch (const tftp::TftpError& e) {
-                            popup = popup.ErrorPopup(e.what());
-                        } catch (const std::exception& e) {
-                            popup = popup.ErrorPopup(e.what());
+                        tftp_action.detach();
+                    }
+
+
+                    ImGui::SameLine();
+                    ImGui::SetCursorPosX(start_x + 70 + spacing);
+
+                    if (ImGui::Button("PUT", ImVec2(70, 35)) && !disable_input)
+                    {
+                        if (disable_input)
+                        {
+							goto skip_thread_creation;
                         }
 
-                        file.close();
-                        disable_input = false;
-                    });
+                        std::thread tftp_action([progress_callback, &popup, &disable_input, &log]()
+                            {
+                                disable_input = true;
 
-                    tftp_action.detach();
+                                std::ifstream file(local_filepath, std::ios::binary);
+                                std::string address_str = address + std::string(":") + std::to_string(port);
+                                std::string remote_filepath_str = remote_filepath;
+
+                                try {
+                                    tftp::Client::send(address_str, remote_filepath, file, progress_callback, std::chrono::milliseconds(100));
+                                    // log.push_back("Successfully uploaded " + remote_filepath_str + " (size: " + std::to_string(file.tellg()) + " bytes).");
+                                }
+                                catch (const tftp::TftpError& e) {
+                                    popup = popup.ErrorPopup(e.what());
+                                }
+                                catch (const std::exception& e) {
+                                    popup = popup.ErrorPopup(e.what());
+                                }
+
+                                file.close();
+                                disable_input = false; });
+
+                        tftp_action.detach();
+                    }
+
+                    skip_thread_creation:
+                    ImGui::PopStyleVar(2);
+
+                    ImGui::Dummy(ImVec2(0, 10));
+
+                    ImGui::ProgressBar(progress, ImVec2(ImGui::GetContentRegionMax().x - 20, 0));
+
+                    ImGui::EndTabItem();
                 }
+
+                if (ImGui::BeginTabItem("Server"))
+                {
+                    ImGui::Text("Server tab");
+                    ImGui::EndTabItem();
+                }
+
+                if (ImGui::BeginTabItem("Log"))
+                {
+                    for (auto& line : log)
+                    {
+                        ImGui::Text(line.c_str());
+                    }
+                    ImGui::EndTabItem();
+                }
+
+                ImGui::EndTabBar();
             }
-                        
-            ImGui::PopStyleVar(2);
 
-            ImGui::Dummy(ImVec2(0, 10));
+			// Popups
 
-            ImGui::ProgressBar(progress, ImVec2(ImGui::GetContentRegionMax().x - 20, 0));
-
-            if (popup.open) {
+            if (popup.open)
+            {
                 ImGui::OpenPopup(popup.title.c_str());
             }
 
-            if (ImGui::BeginPopupModal(popup.title.c_str(), &popup.open)) {
-                beep();
+            if (ImGui::BeginPopupModal(popup.title.c_str(), &popup.open))
+            {
                 ImGui::Text(popup.message.c_str());
-                if (ImGui::Button("OK")) {
+                if (ImGui::Button("OK"))
+                {
                     ImGui::CloseCurrentPopup();
                     popup.open = false;
                 }
@@ -272,16 +332,15 @@ int main(int, char**)
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
-        glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(window);
     }
 
+    // Cleanup
     NFD_Quit();
 
-    // Cleanup
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
