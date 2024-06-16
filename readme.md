@@ -24,8 +24,7 @@ As for submodules - I do not claim ownership of thier source code - see their re
 ## Todos
 
 - [ ] Server functionality
-    - [ ] Use tabs to separate client and server
 - [ ] Better layout?
-- [ ] Test on unix  - IT WON'T WORK FOR NOW
+- [X] Test on unix - tested on newest debian with wayland - works fine
 - [ ] Use better font
-- [ ] Document and reformat the code - separate concerns
+- [ ] Documentation
