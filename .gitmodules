@@ -4,9 +4,6 @@
 [submodule "glfw"]
 	path = third-party/glfw
 	url = https://github.com/glfw/glfw
-[submodule "third-party/tftp.cpp"]
-	path = third-party/tftp.cpp
-	url = https://github.com/mtrafisz/tftp.cpp
 [submodule "third-party/nfd"]
 	path = third-party/nfd
 	url = https://github.com/btzy/nativefiledialog-extended

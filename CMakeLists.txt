@@ -5,7 +5,9 @@ execute_process (COMMAND git submodule update --init --recursive --depth 1
                  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 project (tftpp)
-set (CXX_STANDARD_REQUIRED C17)
+set (CMAKE_CXX_STANDARD 17)
+set (CMAKE_CXX_STANDARD_REQUIRED ON)
+set (CMAKE_BUILD_TYPE Debug)
 
 # compile submodules
 add_subdirectory (third-party/glfw)
